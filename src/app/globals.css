@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* ─── Color Tokens ─────────────────────────────────────────── */
+:root {
+  --bg:           #F0F4FF;
+  --surface:      #E4EAF8;
+  --ink:          #0A0F1E;
+  --ink-muted:    #4A5A72;
+  --primary:      #00A87A;
+  --primary-lt:   #D0F5EC;
+  --secondary:    #3A5A8F;
+  --secondary-lt: #CDD9EF;
+  --tertiary:     #0A0F1E;
+  --tertiary-lt:  #DDE6F5;
+}
+
+.dark {
+  --bg:           #0A0F1E;
+  --surface:      #111827;
+  --ink:          #F0F4FF;
+  --ink-muted:    #8A9AB5;
+  --primary:      #2EF4C5;
+  --primary-lt:   rgba(46,244,197,0.10);
+  --secondary:    #4A6FA5;
+  --secondary-lt: rgba(74,111,165,0.10);
+  --tertiary:     #E8F0FE;
+  --tertiary-lt:  rgba(232,240,254,0.08);
+}
