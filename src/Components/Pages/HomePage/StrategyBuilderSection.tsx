@@ -56,7 +56,7 @@ export default function StrategyBuilderSection() {
   }, [chartStates.length]);
 
   return (
-    <section className="bg-[var(--bg)] py-24 px-6 relative transition-colors duration-300 font-sans">
+    <section id="strategies" className="bg-[var(--bg)] py-24 px-6 relative transition-colors duration-300 font-sans">
       <div className="max-w-[1200px] mx-auto">
         
         {/* Header Section */}

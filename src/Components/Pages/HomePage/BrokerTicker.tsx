@@ -14,7 +14,7 @@ export default function BrokersSection() {
   const marqueeBrokers = [...brokers, ...brokers];
 
   return (
-    <section className="bg-[var(--bg)] py-24 relative overflow-hidden transition-colors duration-300">
+    <section id="brokers" className="bg-[var(--bg)] py-24 relative overflow-hidden transition-colors duration-300">
       
       {/* Inline styles for the infinite scroll animation */}
       <style>{`

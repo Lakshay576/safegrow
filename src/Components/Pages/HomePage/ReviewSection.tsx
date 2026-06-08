@@ -86,7 +86,7 @@ export default function ReviewsSection() {
   );
 
   return (
-    <section className="bg-[var(--bg)] py-24 relative overflow-hidden transition-colors duration-300 font-sans">
+    <section id="review" className="bg-[var(--bg)] py-24 relative overflow-hidden transition-colors duration-300 font-sans">
       
       {/* Inline Animation Keyframes */}
       <style>{`
