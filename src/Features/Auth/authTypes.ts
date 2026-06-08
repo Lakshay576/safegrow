@@ -81,3 +81,34 @@ export interface Enable2FAResponse {
   success: boolean
   message: string
 }
+
+export interface LoginData {
+  email: string
+  password: string
+}
+
+export interface LoginResponse {
+  success: boolean
+  requires2FA?: boolean
+  requires2FASetup?: boolean
+  tempToken?: string
+  message: string
+}
+
+export interface Verify2FAData {
+  tempToken: string
+  token: string
+}
+
+export interface Verify2FAResponse {
+  success: boolean
+  message: string
+  data: {
+    id: string
+    name: string
+    email: string
+    mobile: string
+    sessionToken: string
+    redirect: string
+  }
+}

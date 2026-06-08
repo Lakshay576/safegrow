@@ -4,6 +4,8 @@ export const AUTH_ENDPOINTS = {
   REGISTER:        `${API_BASE_URL}/api/auth/register`,
   VERIFY_OTP:      `${API_BASE_URL}/api/auth/verify-otp`,
   RESEND_OTP:      `${API_BASE_URL}/api/auth/resend-otp`,
+  LOGIN:           `${API_BASE_URL}/api/auth/login`,
   SETUP_2FA:       `${API_BASE_URL}/api/auth/2fa/setup`,
   ENABLE_2FA:      `${API_BASE_URL}/api/auth/2fa/enable`,
+  VERIFY_2FA:      `${API_BASE_URL}/api/auth/2fa/verify`,
 }

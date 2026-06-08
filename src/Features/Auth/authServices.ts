@@ -1,6 +1,6 @@
 import api from "@/lib/axios";
 import { AUTH_ENDPOINTS } from "./authRoutes";
-import { RegisterData, RegisterResponse, VerifyOTPData, VerifyOTPResponse, ResendOTPData, ResendOTPResponse, Setup2FAResponse, Enable2FAData, Enable2FAResponse } from "./authTypes";
+import { RegisterData, RegisterResponse, VerifyOTPData, VerifyOTPResponse, ResendOTPData, ResendOTPResponse, Setup2FAResponse, Enable2FAData, Enable2FAResponse, LoginData, LoginResponse, Verify2FAData, Verify2FAResponse } from "./authTypes";
 
 export const registerService = async (data: RegisterData): Promise<RegisterResponse> => {
   try {
@@ -41,6 +41,24 @@ export const setup2FAService = async (): Promise<Setup2FAResponse> => {
 export const enable2FAService = async (data: Enable2FAData): Promise<Enable2FAResponse> => {
   try {
     const response = await api.post<Enable2FAResponse>(AUTH_ENDPOINTS.ENABLE_2FA, data)
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
+
+export const loginService = async (data: LoginData): Promise<LoginResponse> => {
+  try {
+    const response = await api.post<LoginResponse>(AUTH_ENDPOINTS.LOGIN, data)
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
+
+export const verify2FAService = async (data: Verify2FAData): Promise<Verify2FAResponse> => {
+  try {
+    const response = await api.post<Verify2FAResponse>(AUTH_ENDPOINTS.VERIFY_2FA, data)
     return response.data
   } catch (error) {
     throw error

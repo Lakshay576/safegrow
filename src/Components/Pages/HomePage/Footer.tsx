@@ -1,12 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useTheme } from "@/app/ThemeProvider";
 
 export default function Footer() {
-  const [dark, setDark] = useState(true);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
+  const { dark, setDark } = useTheme();
 
   return (
     <footer style={{
@@ -55,8 +51,8 @@ export default function Footer() {
                     textDecoration: "none",
                     transition: "color 0.2s",
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "var(--primary)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-muted)")}
+                    onMouseEnter={e => (e.currentTarget.style.color = "var(--primary)")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-muted)")}
                   >
                     {link}
                   </a>
@@ -116,8 +112,8 @@ export default function Footer() {
               textDecoration: "none",
               transition: "color 0.2s",
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = "var(--primary)")}
-            onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-muted)")}
+              onMouseEnter={e => (e.currentTarget.style.color = "var(--primary)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "var(--ink-muted)")}
             >
               {l}
             </a>
