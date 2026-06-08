@@ -93,6 +93,15 @@ export interface LoginResponse {
   requires2FASetup?: boolean
   tempToken?: string
   message: string
+  data?: {
+    id: string
+    name: string
+    email: string
+    mobile: string
+    sessionToken: string
+    redirect: string
+    twoFAEnabled: boolean
+  }
 }
 
 export interface Verify2FAData {

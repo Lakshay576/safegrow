@@ -26,3 +26,18 @@
   --tertiary:     #E8F0FE;
   --tertiary-lt:  rgba(232,240,254,0.08);
 }
+
+/* ─── Browser Autofill Override ───────────────────────────── */
+/* Prevents Chrome/Safari from forcing white/yellow bg on autofilled inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--bg) inset !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
