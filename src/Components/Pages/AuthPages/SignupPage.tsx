@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useToast } from "@/Components/Common/Toast/customToast";
 
-type Step = "signup" | "otp" | "setup2fa";
+type Step = "signup" | "otp" | "setup2fa" | "prompt2fa";
 
 interface FormData {
   name: string;
@@ -65,9 +65,10 @@ export default function SignupPage() {
   const e: Partial<FormData> = {};
   if (!formData.name.trim()) e.name = "Name is required";
   if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = "Valid email required";
-  if (!formData.phone.match(/^\+?[\d\s-]{10,}/)) e.phone = "Valid phone required";
-  if (formData.password.length < 8) e.password = "Min 8 characters required";
-  if (formData.password !== formData.confirmPassword) e.confirmPassword = "Passwords don't match";
+  if (!formData.phone.match(/^\d{10}$/)) e.phone = "Valid 10-digit phone required";
+  if (formData.password.length < 6) e.password = "Min 6 characters required";
+  if (!formData.confirmPassword) e.confirmPassword = "Confirm Password is required";
+  else if (formData.password !== formData.confirmPassword) e.confirmPassword = "Passwords don't match";
   setErrors(e);
 
   const allEmpty = !formData.name.trim() && !formData.email.trim() && !formData.phone.trim() && !formData.password && !formData.confirmPassword;
@@ -85,7 +86,15 @@ export default function SignupPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let finalValue = value;
+    
+    if (name === "name") {
+      finalValue = value.replace(/[^a-zA-Z\s]/g, ""); // Only letters and spaces
+    } else if (name === "phone") {
+      finalValue = value.replace(/\D/g, ""); // Only digits
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
     if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -140,15 +149,11 @@ const handleStep1Submit = async (e: React.FormEvent) => {
   const verifyResult = await dispatch(verifyOTP({ email: formData.email, otp: code }))
   if (verifyOTP.fulfilled.match(verifyResult)) {
     showToast("Email verified successfully!", 'success')
-
-    const setupResult = await dispatch(setup2FA())   // ← generate QR before redirect
-    if (setup2FA.fulfilled.match(setupResult)) {
-      router.push('/2fa')   // ← QR is already in store when page loads
-    } else {
-      showToast(setupResult.payload as string || "2FA setup failed", 'error')
-    }
+    setStep("prompt2fa")
   } else {
-    showToast(verifyResult.payload as string || "OTP verification failed", 'error')
+    showToast(verifyResult.payload as string || "OTP verification failed", 'error');
+    setOtp(Array(6).fill(""));
+    otpRefs.current[0]?.focus();
   }
 }
 
@@ -236,11 +241,13 @@ const handleResendOtp = async () => {
                 {step === "signup" && "Create your account"}
                 {step === "otp" && "Verify your email"}
                 {step === "setup2fa" && "Secure your account"}
+                {step === "prompt2fa" && "One more thing..."}
               </h2>
               <p className="text-[var(--ink-muted)] text-sm">
                 {step === "signup" && "Start your journey to autonomous wealth generation."}
                 {step === "otp" && `We sent a 6-digit code to ${formData.email || 'your email'}.`}
                 {step === "setup2fa" && "Scan the QR code with your Authenticator app."}
+                {step === "prompt2fa" && "Your account is verified! Would you like to secure it with 2FA?"}
               </p>
             </div>
 
@@ -382,6 +389,43 @@ const handleResendOtp = async () => {
                   {otpLoading ? <span className="w-5 h-5 border-2 border-[#0A0F1E] border-t-transparent rounded-full animate-spin" /> : "Verify Email"}
                 </button>
               </form>
+            )}
+
+            {/* STEP: 2FA PROMPT */}
+            {step === "prompt2fa" && (
+              <div className="space-y-5 animate-fadeUp">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-20 h-20 rounded-2xl bg-[var(--primary-lt)] flex items-center justify-center mb-6">
+                    <svg className="w-10 h-10 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-[var(--ink)] text-lg font-semibold mb-2">Enable Two-Factor Authentication?</h3>
+                  <p className="text-[var(--ink-muted)] text-sm leading-relaxed max-w-[320px]">
+                    Add an extra layer of security to your account using Google Authenticator. This protects your funds even if your password is compromised.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => router.push('/2fa')}
+                  className="w-full cursor-pointer bg-[var(--primary)] text-[#0A0F1E] text-sm font-semibold py-4 rounded-xl transition-all hover:opacity-90 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                  Yes, enable 2FA now
+                </button>
+
+                <button
+                  onClick={() => {
+                    showToast("You can enable 2FA anytime from settings", 'info')
+                    router.push('/login')
+                  }}
+                  className="w-full cursor-pointer text-center text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] font-medium transition-colors py-3 rounded-xl border border-[var(--secondary-lt)] hover:border-[var(--primary)] hover:bg-[var(--primary-lt)]" 
+                >
+                  I'll do it later
+                </button>
+              </div>
             )}
 
             {/* Footer info link */}

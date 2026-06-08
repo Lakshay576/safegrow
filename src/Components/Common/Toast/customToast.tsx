@@ -70,30 +70,26 @@ const Toast = ({ id, message, type = 'success', onClose, duration = 4000 }: Toas
     setIsPaused(false);
   };
 
-  const config: Record<ToastType, { icon: React.ReactNode; bg: string; border: string }> = {
+  const config: Record<ToastType, { icon: React.ReactNode; accentColor: string }> = {
     success: {
-      icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
-      bg: 'bg-white',
-      border: 'border-slate-200',
+      icon: <CheckCircle2 className="w-5 h-5 text-emerald-400" />,
+      accentColor: 'var(--primary)',
     },
     error: {
-      icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-      bg: 'bg-[#fafafa]',
-      border: 'border-slate-200',
+      icon: <AlertCircle className="w-5 h-5 text-red-400" />,
+      accentColor: '#ef4444',
     },
     info: {
-      icon: <Info className="w-5 h-5 text-blue-500" />,
-      bg: 'bg-white',
-      border: 'border-slate-200',
+      icon: <Info className="w-5 h-5 text-blue-400" />,
+      accentColor: '#3b82f6',
     },
     loading: {
-      icon: <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />,
-      bg: 'bg-white',
-      border: 'border-slate-200',
+      icon: <Loader2 className="w-5 h-5 text-[var(--ink-muted)] animate-spin" />,
+      accentColor: 'var(--secondary)',
     },
   };
 
-  const { icon, bg, border } = config[type] ?? config.success;
+  const { icon, accentColor } = config[type] ?? config.success;
 
   return (
     <>
@@ -110,12 +106,16 @@ const Toast = ({ id, message, type = 'success', onClose, duration = 4000 }: Toas
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         className={`
-          flex items-center min-w-[320px] max-w-md p-4 mb-3 rounded-lg border shadow-lg
-          ${bg} ${border} text-slate-900 cursor-default
+          flex items-center min-w-[320px] max-w-md p-4 mb-3 rounded-2xl border backdrop-blur-md
+          bg-[var(--surface)] border-[var(--secondary-lt)] text-[var(--ink)] cursor-default
           transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) transform
           ${isExiting ? 'opacity-0 translate-x-12 scale-95 blur-sm' : 'toast-entrance'}
-          ${isPaused ? 'ring-2 ring-slate-100 scale-[1.02]' : ''}
+          ${isPaused ? 'ring-2 ring-[var(--primary)]/30 scale-[1.02]' : ''}
         `}
+        style={{
+          boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px var(--secondary-lt), inset 0 1px 0 rgba(255,255,255,0.06)`,
+          borderLeft: `3px solid ${accentColor}`,
+        }}
         role="alert"
       >
         <div className="flex-shrink-0 mr-3">{icon}</div>
@@ -125,7 +125,7 @@ const Toast = ({ id, message, type = 'success', onClose, duration = 4000 }: Toas
             e.stopPropagation();
             handleClose();
           }}
-          className="flex-shrink-0 ml-auto -mx-1.5 -my-1.5 cursor-pointer text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg p-1.5 inline-flex h-8 w-8 transition-colors active:scale-90"
+          className="flex-shrink-0 ml-auto -mx-1.5 -my-1.5 cursor-pointer text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--secondary-lt)] rounded-lg p-1.5 inline-flex h-8 w-8 transition-colors active:scale-90"
           aria-label="Close"
         >
           <X className="w-4 h-4" />

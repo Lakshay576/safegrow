@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { login, verify2FAAction } from "../../../Features/Auth/authSlice";
+import { useToast } from "@/Components/Common/Toast/customToast";
 
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch<any>();
   const { loading, error } = useSelector((state: any) => state.auth);
+  const { showToast } = useToast();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState("");
@@ -16,6 +18,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [tempToken, setTempToken] = useState("");
+  const twoFAInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Validation States
   const [emailError, setEmailError] = useState(false);
@@ -47,11 +50,16 @@ export default function LoginPage() {
         setTempToken(res.tempToken);
         setStep(2);
       } else {
-        router.push("/dashboard");
+        if (res.data?.twoFAEnabled === false) {
+          showToast("2FA is not enabled. Redirecting to set it up...", 'info', 3000);
+          setTimeout(() => router.push("/2fa"), 1500);
+        } else {
+          showToast("Login successful!", 'success');
+          router.push("/dashboard");
+        }
       }
     } catch (err: any) {
-      // You can also use Redux error state, but showing an alert for simplicity
-      alert(err || "Login failed");
+      showToast(err || "Login failed", 'error');
     }
   };
 
@@ -67,10 +75,13 @@ export default function LoginPage() {
     try {
       const res = await dispatch(verify2FAAction({ tempToken, token: twoFactorCode })).unwrap();
       if (res.success) {
+        showToast("Authentication successful!", 'success');
         router.push(res.data?.redirect || "/dashboard");
       }
     } catch (err: any) {
-      alert(err || "2FA Verification failed");
+      showToast(err || "2FA verification failed", 'error');
+      setTwoFactorCode("");
+      twoFAInputRefs.current[0]?.focus();
     }
   };
 
@@ -229,21 +240,51 @@ export default function LoginPage() {
                   <label className="block text-sm font-medium text-[var(--ink)] mb-3 text-center">
                     Authenticator Code
                   </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={twoFactorCode}
-                    onChange={(e) => {
-                      setTwoFactorCode(e.target.value.replace(/\D/g, ""));
-                      if (twoFactorError) setTwoFactorError(false);
-                    }}
-                    placeholder="000000"
-                    className={`w-full bg-[var(--bg)] border rounded-xl px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] text-[var(--ink)] placeholder-[var(--ink-muted)] focus:outline-none focus:ring-1 transition-all ${
-                      twoFactorError
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                        : "border-[var(--secondary-lt)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
-                    }`}
-                  />
+                  <div className="flex justify-center gap-2.5">
+                    {Array.from({ length: 6 }).map((_, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => { twoFAInputRefs.current[idx] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={twoFactorCode[idx] || ""}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          let newCode = twoFactorCode.split("");
+                          while (newCode.length < 6) newCode.push("");
+                          newCode[idx] = val;
+                          setTwoFactorCode(newCode.join(""));
+                          if (twoFactorError) setTwoFactorError(false);
+                          if (val && idx < 5) {
+                            twoFAInputRefs.current[idx + 1]?.focus();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && (!twoFactorCode[idx] || twoFactorCode[idx] === "") && idx > 0) {
+                            let newCode = twoFactorCode.split("");
+                            while (newCode.length < 6) newCode.push("");
+                            newCode[idx - 1] = "";
+                            setTwoFactorCode(newCode.join(""));
+                            twoFAInputRefs.current[idx - 1]?.focus();
+                          }
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                          setTwoFactorCode(paste);
+                          if (twoFactorError) setTwoFactorError(false);
+                          const focusIdx = Math.min(paste.length, 5);
+                          twoFAInputRefs.current[focusIdx]?.focus();
+                        }}
+                        className={`w-12 h-14 bg-[var(--bg)] border rounded-xl text-center text-xl font-semibold text-[var(--ink)] focus:outline-none focus:ring-1 transition-all ${
+                          twoFactorError
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                            : "border-[var(--secondary-lt)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
+                        }`}
+                      />
+                    ))}
+                  </div>
                   {twoFactorError && <p className="text-red-500 text-xs mt-2 font-medium text-center">Please enter a valid 6-digit code.</p>}
                 </div>
 
