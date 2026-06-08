@@ -5,14 +5,18 @@ import type {
   VerifyOTPData,
   ResendOTPData,
   Enable2FAData,
-  Enable2FAResponse
+  Enable2FAResponse,
+  LoginData,
+  Verify2FAData
 } from "./authTypes";
 import {
   registerService,
   verifyOTPService,
   resendOTPService,
   setup2FAService,
-  enable2FAService
+  enable2FAService,
+  loginService,
+  verify2FAService
 } from "./authServices";
 
 const initialState: AuthState = {
@@ -85,6 +89,28 @@ export const enable2FA = createAsyncThunk(
       return await enable2FAService(data)
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || '2FA enable failed')
+    }
+  }
+)
+
+export const login = createAsyncThunk(
+  'auth/login',
+  async (data: LoginData, { rejectWithValue }) => {
+    try {
+      return await loginService(data)
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || 'Login failed')
+    }
+  }
+)
+
+export const verify2FAAction = createAsyncThunk(
+  'auth/verify2FA',
+  async (data: Verify2FAData, { rejectWithValue }) => {
+    try {
+      return await verify2FAService(data)
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || '2FA verification failed')
     }
   }
 )
@@ -172,6 +198,37 @@ const authSlice = createSlice({
     .addCase(enable2FA.rejected, (state, action) => {
     state.enableLoading = false
     state.error = action.payload as string
+    })
+
+    // Login
+    .addCase(login.pending, (state) => {
+      state.loading = true
+      state.error = null
+      state.successMessage = null
+    })
+    .addCase(login.fulfilled, (state, action) => {
+      state.loading = false
+      state.successMessage = action.payload.message
+    })
+    .addCase(login.rejected, (state, action) => {
+      state.loading = false
+      state.error = action.payload as string
+    })
+
+    // Verify 2FA
+    .addCase(verify2FAAction.pending, (state) => {
+      state.loading = true
+      state.error = null
+    })
+    .addCase(verify2FAAction.fulfilled, (state, action) => {
+      state.loading = false
+      state.sessionToken = action.payload.data.sessionToken
+      state.successMessage = action.payload.message
+      // The user data might need to be stored, currently it's just ID/email/mobile etc.
+    })
+    .addCase(verify2FAAction.rejected, (state, action) => {
+      state.loading = false
+      state.error = action.payload as string
     })
 
   },

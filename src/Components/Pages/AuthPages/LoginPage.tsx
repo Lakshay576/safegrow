@@ -1,21 +1,28 @@
 "use client";
 
 import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { login, verify2FAAction } from "../../../Features/Auth/authSlice";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const dispatch = useDispatch<any>();
+  const { loading, error } = useSelector((state: any) => state.auth);
+
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [tempToken, setTempToken] = useState("");
 
   // Validation States
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [twoFactorError, setTwoFactorError] = useState(false);
 
-  const handleStep1Submit = (e: React.FormEvent) => {
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     let isValid = true;
 
@@ -34,17 +41,21 @@ export default function LoginPage() {
 
     if (!isValid) return;
 
-    console.log("Step 1 Completed:", { email, password });
-
-    setIsLoading(true);
-    // Simulate API validation before moving to 2FA step
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(2);
-    }, 800);
+    try {
+      const res = await dispatch(login({ email, password })).unwrap();
+      if (res.requires2FA || res.requires2FASetup) {
+        setTempToken(res.tempToken);
+        setStep(2);
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      // You can also use Redux error state, but showing an alert for simplicity
+      alert(err || "Login failed");
+    }
   };
 
-  const handleStep2Submit = (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // 2FA Validation (Must be exactly 6 digits)
@@ -53,14 +64,14 @@ export default function LoginPage() {
       return;
     }
 
-    console.log("Step 2 Completed - Final Login Data:", { email, password, twoFactorCode });
-
-    setIsLoading(true);
-    // Simulate final authentication check
-    setTimeout(() => {
-      setIsLoading(false);
-      alert("Authenticated Successfully!");
-    }, 1000);
+    try {
+      const res = await dispatch(verify2FAAction({ tempToken, token: twoFactorCode })).unwrap();
+      if (res.success) {
+        router.push(res.data?.redirect || "/dashboard");
+      }
+    } catch (err: any) {
+      alert(err || "2FA Verification failed");
+    }
   };
 
   return (
@@ -199,10 +210,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={loading}
                   className="w-full cursor-pointer bg-[var(--primary)] text-[#0A0F1E] text-sm font-semibold py-4 rounded-xl transition-all hover:opacity-90 mt-2 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <span className="w-5 h-5 border-2 border-[#0A0F1E] border-t-transparent rounded-full animate-spin" />
                   ) : (
                     "Log in securely"
@@ -238,10 +249,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={loading}
                   className="w-full cursor-pointer bg-[var(--primary)] text-[#0A0F1E] text-sm font-semibold py-4 rounded-xl transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20"
                 >
-                  {isLoading ? (
+                  {loading ? (
                     <span className="w-5 h-5 border-2 border-[#0A0F1E] border-t-transparent rounded-full animate-spin" />
                   ) : (
                     "Verify & Access Portfolio"
