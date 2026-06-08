@@ -62,15 +62,26 @@ export default function SignupPage() {
 
   // --- HANDLERS ---
   const validate = (): boolean => {
-    const e: Partial<FormData> = {};
-    if (!formData.name.trim()) e.name = "Name is required";
-    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = "Valid email required";
-    if (!formData.phone.match(/^\+?[\d\s-]{10,}/)) e.phone = "Valid phone required";
-    if (formData.password.length < 8) e.password = "Min 8 characters required";
-    if (formData.password !== formData.confirmPassword) e.confirmPassword = "Passwords don't match";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+  const e: Partial<FormData> = {};
+  if (!formData.name.trim()) e.name = "Name is required";
+  if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = "Valid email required";
+  if (!formData.phone.match(/^\+?[\d\s-]{10,}/)) e.phone = "Valid phone required";
+  if (formData.password.length < 8) e.password = "Min 8 characters required";
+  if (formData.password !== formData.confirmPassword) e.confirmPassword = "Passwords don't match";
+  setErrors(e);
+
+  const allEmpty = !formData.name.trim() && !formData.email.trim() && !formData.phone.trim() && !formData.password && !formData.confirmPassword;
+
+  if (allEmpty) {
+    showToast("All fields are required", 'error')
+  } else if (e.confirmPassword) {
+    showToast("Passwords don't match", 'error')
+  } else if (Object.keys(e).length > 0) {
+    showToast(Object.values(e)[0] as string, 'error')
+  }
+
+  return Object.keys(e).length === 0;
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -80,7 +91,7 @@ export default function SignupPage() {
     }
   };
 
-  const handleStep1Submit = async (e: React.FormEvent) => {
+const handleStep1Submit = async (e: React.FormEvent) => {
   e.preventDefault()
   if (!validate()) return
 
@@ -92,9 +103,12 @@ export default function SignupPage() {
   }))
 
   if (registerUser.fulfilled.match(result)) {
+    showToast("OTP sent to your email!", 'success')
     setTimer(60)
     setCanResend(false)
     setStep("otp")
+  } else {
+    showToast(result.payload as string || "Registration failed", 'error')
   }
 }
 
@@ -114,18 +128,27 @@ export default function SignupPage() {
     }
   };
 
-    const handleStep2Submit = async (e: React.FormEvent) => {
+ const handleStep2Submit = async (e: React.FormEvent) => {
   e.preventDefault()
   const code = otp.join("")
   if (code.length < 6) {
     setErrors({ otp: "Please enter a 6-digit code" })
+    showToast("Please enter a 6-digit code", 'error')
     return
   }
 
   const verifyResult = await dispatch(verifyOTP({ email: formData.email, otp: code }))
   if (verifyOTP.fulfilled.match(verifyResult)) {
-    await dispatch(setup2FA())
-    setStep("setup2fa")
+    showToast("Email verified successfully!", 'success')
+
+    const setupResult = await dispatch(setup2FA())   // ← generate QR before redirect
+    if (setup2FA.fulfilled.match(setupResult)) {
+      router.push('/2fa')   // ← QR is already in store when page loads
+    } else {
+      showToast(setupResult.payload as string || "2FA setup failed", 'error')
+    }
+  } else {
+    showToast(verifyResult.payload as string || "OTP verification failed", 'error')
   }
 }
 
@@ -134,20 +157,12 @@ const handleResendOtp = async () => {
   if (resendOTP.fulfilled.match(result)) {
     setTimer(60)
     setCanResend(false)
-    showToast("OTP resent to your email.")
+    showToast("OTP resent to your email.", 'success')
+  } else {
+    showToast(result.payload as string || "Failed to resend OTP", 'error')
   }
 }
 
- const handleStep3Submit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  if (totpCode.length < 6) return
-
-  const result = await dispatch(enable2FA({ token: totpCode }))
-  if (enable2FA.fulfilled.match(result)) {
-    showToast("Account created and secured successfully!")
-    router.push('/login')
-  }
-}
 
   return (
     <div className="min-h-screen bg-[var(--bg)] relative overflow-hidden transition-colors duration-300 font-sans flex items-center py-10">
@@ -165,7 +180,7 @@ const handleResendOtp = async () => {
       <div className="max-w-[1200px] w-full mx-auto px-6 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16 relative z-10">
         
         {/* LEFT SECTION: Minimal Platform Information */}
-        <div className="w-full lg:w-[50%] flex flex-col items-start animate-fadeUp">
+        <div className="hidden lg:flex w-full lg:w-[50%] flex-col items-start animate-fadeUp">
           <div className="inline-flex items-center gap-3 text-[var(--ink)] font-sora font-bold text-3xl tracking-tight mb-8">
             <div className="w-12 h-12 rounded-xl bg-[var(--primary)] flex items-center justify-center text-[#0A0F1E] shadow-lg shadow-[var(--primary)]/20">
               <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
@@ -205,6 +220,15 @@ const handleResendOtp = async () => {
         {/* RIGHT SECTION: Signup/Verification Card */}
         <div className="w-full lg:w-[460px] shrink-0 animate-fadeUp" style={{ animationDelay: '0.1s' }}>
           <div className="bg-[var(--surface)] border border-[var(--secondary-lt)] p-8 md:p-10 rounded-[2rem] backdrop-blur-sm">
+
+            <div className="inline-flex lg:hidden items-center gap-3 text-[var(--ink)] font-sora font-bold text-3xl tracking-tight mb-8">
+            <div className="w-12 h-12 rounded-xl bg-[var(--primary)] flex items-center justify-center text-[#0A0F1E] shadow-lg shadow-[var(--primary)]/20">
+              <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </div>
+            SafeGrow
+          </div>
             
             {/* Header Titles */}
             <div className="mb-8 text-left">
@@ -357,47 +381,6 @@ const handleResendOtp = async () => {
                 <button type="submit" disabled={otpLoading || otp.join("").length < 6} className="w-full cursor-pointer bg-[var(--primary)] text-[#0A0F1E] text-sm font-semibold py-4 rounded-xl transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20">
                   {otpLoading ? <span className="w-5 h-5 border-2 border-[#0A0F1E] border-t-transparent rounded-full animate-spin" /> : "Verify Email"}
                 </button>
-              </form>
-            )}
-
-            {/* STEP 3: 2FA SETUP */}
-            {step === "setup2fa" && (
-              <form onSubmit={handleStep3Submit} className="space-y-6 animate-fadeUp">
-                {setupLoading ? (
-                  <div className="flex justify-center py-10"><span className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>
-                ) : (
-                  <>
-                    <div className="flex flex-col items-center p-4 bg-[var(--bg)] border border-[var(--secondary-lt)] rounded-2xl">
-                      {twoFAData?.qrCode ? (
-                        <img src={twoFAData.qrCode} alt="2FA QR Code" className="w-40 h-40 rounded-xl mb-4 bg-white p-2" />
-                      ) : (
-                        <div className="w-40 h-40 rounded-xl bg-[var(--secondary-lt)] mb-4 flex items-center justify-center text-[var(--ink-muted)]">QR Error</div>
-                      )}
-                      <p className="text-xs text-[var(--ink-muted)] uppercase tracking-wider mb-1">Manual Setup Key</p>
-                      <code className="bg-[var(--surface)] text-[var(--ink)] px-3 py-1.5 rounded text-sm font-mono tracking-widest border border-[var(--secondary-lt)]">
-                        {twoFAData?.secret || "ERROR-KEY"}
-                      </code>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-[var(--ink)] mb-1.5 text-center">
-                        Enter 6-digit TOTP Code
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={totpCode}
-                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
-                        placeholder="000000"
-                        className="w-full bg-[var(--bg)] border border-[var(--secondary-lt)] rounded-xl px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] text-[var(--ink)] placeholder-[var(--ink-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
-                      />
-                    </div>
-
-                    <button type="submit" disabled={enableLoading || totpCode.length < 6} className="w-full cursor-pointer bg-[var(--primary)] text-[#0A0F1E] text-sm font-semibold py-4 rounded-xl transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-[var(--primary)]/20">
-                      {enableLoading ? <span className="w-5 h-5 border-2 border-[#0A0F1E] border-t-transparent rounded-full animate-spin" /> : "Complete Setup"}
-                    </button>
-                  </>
-                )}
               </form>
             )}
 
